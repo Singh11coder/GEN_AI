@@ -3,10 +3,12 @@ import rl from "readline/promises";
 import dotenv from "dotenv";
 import {tool, createAgent} from "langchain";
 import * as z from "zod";
+import { describe } from "zod/v4/core";
 
 dotenv.config();
 
 const events = [];
+const data = [];
 
 const createEventTool = tool(
      
@@ -44,6 +46,42 @@ const getEventTool = tool(
     }
 )
 
+const fetchCompanyData = tool(
+    async function({name,email,phoneNumber,description}){
+
+      console.log("Fetching company data",{name,email,phoneNumber,description})
+
+       data.push({name,
+       email,
+       phoneNumber,
+       description
+      })
+    },
+    {
+       name:"fetchCompanyData",
+       description:"Fetching the data of the company like name, email, phoneNumber, description",
+       schema:z.object({
+          name:z.string(),
+          email:z.string(),
+          phoneNumber:z.number(),
+          description:z.string()
+       })
+    }
+)
+
+const companyData = tool(
+    async function(){
+       console.log("Fetching Data....",data);
+
+       return data;
+    },
+    {
+        name:"getData",
+        description:"Fetching Data...",
+        schema:z.object({})
+    }
+)
+
 
 const model = new ChatGroq({
     model:"openai/gpt-oss-120b",
@@ -52,7 +90,7 @@ const model = new ChatGroq({
 
 const agent = createAgent({
      model,
-     tools:[createEventTool, getEventTool]
+     tools:[createEventTool, getEventTool,fetchCompanyData,companyData]
 })
 
 const readline = rl.createInterface({
